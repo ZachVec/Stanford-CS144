@@ -45,20 +45,14 @@ Connection closed by foreign host.
 
 ### Writing a network program using an OS stream socket
 
-先从github上把代码拉下来，默认的master分支即为lab0所需分支。
+先从github上把代码拉下来，默认的master分支即为以后的实验分支。
 
 ```shell
 $ git clone https://github.com/cs144/sponge ~/cs144
 $ cd ~/cs144
 ```
 
-如果需要查看所有分支，可以输入如下指令：
-
-```shell
-$ git branch --all
-```
-
-后续实验中`git checkout`到对应分支就可以。然后关注下指导手册中提到的避免成对的操作（`malloc/free`，`new/delete`），以及一些特别注意点。
+然后关注下指导手册中提到的避免成对的操作（`malloc/free`，`new/delete`），以及一些特别注意点。
 
 之后是最后一个准备工作，读[FileDescriptor](https://cs144.github.io/doc/lab0/class_file_descriptor.html), [Socket](https://cs144.github.io/doc/lab0/class_socket.html), [TCPSocket](https://cs144.github.io/doc/lab0/class_t_c_p_socket.html)，以及[Address](https://cs144.github.io/doc/lab0/class_address.html) 类的文档。特别是[TCPSocket](https://cs144.github.io/doc/lab0/class_t_c_p_socket.html)中的Detailed Description部分。
 
