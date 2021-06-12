@@ -1,6 +1,6 @@
 # Lab 0: networking warmup
 
-本实验为CS144的第一个实验，从实验名中可以看出实验属于热身性质。实验的指导手册可在[此处](https://cs144.github.io/assignments/lab0.pdf)查看。
+本实验为CS144的第一个实验，从实验名中可以看出实验属于热身性质。除了C++之外，不需要前置知识。实验的指导手册可在[此处](https://cs144.github.io/assignments/lab0.pdf)查看。
 
 ## 实验环境
 
@@ -8,7 +8,7 @@
 
 机器：阿里云ECS
 
-实力规格：ecs.t5-lc1m2.small
+实例规格：ecs.t5-lc1m2.small
 
 ## 实验内容
 
