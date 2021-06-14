@@ -1,6 +1,7 @@
 *.a
 *.o
 /build
+/.vscode
 CMakeCache.txt
 CMakeFiles
 Makefile
