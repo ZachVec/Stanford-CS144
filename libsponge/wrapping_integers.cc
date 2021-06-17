@@ -21,12 +21,9 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
 //! has a different ISN.
 uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
     // seqno(start at isn) -> absolute seqno(start at 0), depending on checkpoint
-    static constexpr uint64_t span = 1ul << 31;
-    uint64_t offset = static_cast<uint64_t>(n.raw_value()-isn.raw_value());
-
-    if(checkpoint < span) return offset;
-    uint64_t target = (checkpoint & ~static_cast<uint64_t>(UINT32_MAX)) + offset;
-    if(target >= checkpoint + span) return target - (span << 1);
-    if(target <  checkpoint - span) return target + (span << 1);
-    return target;
+    constexpr uint64_t span = 1ul << 31; // half of the range, i.e., 2**31
+    uint64_t offset = static_cast<uint32_t>(n-isn);
+    uint64_t highbd = checkpoint + span; // high border
+    uint64_t target = (highbd & ~static_cast<uint64_t>(UINT32_MAX)) + offset;
+    return target >= highbd && checkpoint >= span ? target - (1ul<<32): target;
 }
