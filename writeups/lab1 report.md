@@ -8,7 +8,7 @@
 
 机器：阿里云ECS
 
-实力规格：ecs.t5-lc1m2.small
+实例规格：ecs.t5-lc1m2.small
 
 ## 实验内容
 
