@@ -98,7 +98,7 @@ TCPSegment TCPSender::get_segment(size_t segsize) {
         // if SYN datagram hasn't been sent, then set SYN flag
         segment.header().syn   = true;
         segment.header().seqno = wrap(_next_seqno, _isn);
-    } else { // _stream might be not ended, and probably be written into afterwards.
+    } else { // _stream might not be ended, and be written into afterwards.
         // TCPConfig::MAX_PAYLOAD_SIZE only limits PAYLOAD size, not the segment size
         // which means even if the payload.size() == TCPConfig::MAX_PAYLOAD_SIZE
         // FIN flag COULD be set if necessary.
