@@ -8,6 +8,37 @@
 
 #include <functional>
 #include <queue>
+#include <map>
+
+class Timer {
+  private:
+    uint16_t _timer{0}; // time in miliseconds
+    uint16_t _curr_val{0}; // current timer value
+    bool _running{false};
+    uint16_t (*_strategy)(uint16_t); // back off strategy
+  public:
+    Timer(uint16_t _init_val, uint16_t (*strategy)(uint16_t)) : _curr_val(_init_val), _strategy(strategy) {}
+    void tick(const size_t ms) { if(_running) _timer -= std::min(_timer, static_cast<uint16_t>(ms)); }
+    void reset(uint16_t val) {
+      turnoff();
+      _curr_val = val;
+    }
+    void turnon()  {
+      if(_running) return;
+      _timer = _curr_val;
+      _running = true;
+    }
+    void turnoff() { _running = false; }
+    void backoff() { _curr_val = _strategy(_curr_val); }
+    bool goesoff() {
+      if(_running && _timer == 0) {
+        turnoff();
+        return true;
+      } else {
+        return false;
+      }
+    }
+};
 
 //! \brief The "sender" part of a TCP implementation.
 
