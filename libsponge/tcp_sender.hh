@@ -63,6 +63,15 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
+    uint64_t _window_size{1}; // sender-maintaining window size
+    uint64_t _last_ackno{0};
+    unsigned int _retxcounter{0}; // retransmission counter
+    Timer _timer; // timer
+    std::map<uint64_t, TCPSegment> _outstanding{}; // outstanding segments, key is ending seqno + 1
+
+    TCPSegment get_segment(size_t size); // get a tcp segment of size up to `size`
+    bool fin_sent() { return _stream.input_ended() && _next_seqno == _stream.bytes_written() + 2; }
+
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
