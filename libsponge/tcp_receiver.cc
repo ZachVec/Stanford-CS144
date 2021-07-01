@@ -35,3 +35,15 @@ optional<WrappingInt32> TCPReceiver::ackno() const {
 //! It's apparent that _capacity = stream_out().buffer_size() + window_size.
 //! so \returns _capacity - stream_out().buffer_size()
 size_t TCPReceiver::window_size() const { return _capacity - stream_out().buffer_size(); }
+
+TCPReceiver::State TCPReceiver::state() {
+    if(stream_out().error()) {
+        return TCPReceiver::State::ERROR;
+    } else if (!ackno().has_value()) {
+        return TCPReceiver::State::LISTEN;
+    } else if (!stream_out().input_ended()) {
+        return TCPReceiver::State::SYN_RECV;
+    } else {
+        return TCPReceiver::State::FIN_RECV;
+    }
+}

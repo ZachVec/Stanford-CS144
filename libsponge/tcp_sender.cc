@@ -108,3 +108,21 @@ TCPSegment TCPSender::get_segment(size_t segsize) {
     }
     return segment;
 }
+
+TCPSender::State TCPSender::state() {
+    if(stream_in().error()) {
+        return TCPSender::State::ERROR;
+    } else if (next_seqno_absolute() == 0) {
+        return TCPSender::State::CLOSED;
+    } else if (next_seqno_absolute() == bytes_in_flight()) {
+        return TCPSender::State::SYN_SENT;
+    } else if (!stream_in().eof()) {
+        return TCPSender::State::SYN_ACKED;
+    } else if (next_seqno_absolute() < stream_in().bytes_written() + 2) {
+        return TCPSender::State::SYN_ACKED;
+    } else if (bytes_in_flight() > 0) {
+        return TCPSender::State::FIN_SENT;
+    } else {
+        return TCPSender::State::FIN_ACKED;
+    }
+}

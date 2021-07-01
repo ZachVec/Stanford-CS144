@@ -23,12 +23,16 @@ class TCPReceiver {
     //! Initial Seqence Number, aka isn
     std::optional<WrappingInt32> _isn;
 
+
   public:
     //! \brief Construct a TCP receiver
     //!
     //! \param capacity the maximum number of bytes that the receiver will
     //!                 store in its buffers at any give time.
     TCPReceiver(const size_t capacity) : _reassembler(capacity), _capacity(capacity), _isn() {}
+
+    enum class State {LISTEN=0, SYN_RECV, FIN_RECV, ERROR};
+    TCPReceiver::State state();
 
     //! \name Accessors to provide feedback to the remote TCPSender
     //!@{

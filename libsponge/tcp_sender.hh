@@ -78,6 +78,8 @@ class TCPSender {
               const uint16_t retx_timeout = TCPConfig::TIMEOUT_DFLT,
               const std::optional<WrappingInt32> fixed_isn = {});
 
+    enum class State {CLOSED=0, SYN_SENT, SYN_ACKED, FIN_SENT, FIN_ACKED, ERROR};
+    TCPSender::State state();
     //! \name "Input" interface for the writer
     //!@{
     ByteStream &stream_in() { return _stream; }
