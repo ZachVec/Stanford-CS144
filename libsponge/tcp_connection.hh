@@ -25,6 +25,7 @@ class TCPConnection {
 
     void send_reset();
     void send_segments();
+    void recv_segments(const TCPSegment &seg);
     void unclean_shutdown();
     ByteStream &outbound_stream() { return _sender.stream_in(); }
 
