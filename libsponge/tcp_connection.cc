@@ -1,6 +1,8 @@
 #include "tcp_connection.hh"
 #include <iostream>
 using namespace std;
+using RState = TCPReceiver::State;
+using SState = TCPSender::State;
 
 size_t TCPConnection::remaining_outbound_capacity() const { return _sender.stream_in().remaining_capacity(); }
 
@@ -27,7 +29,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
   }
 
   // segment without SYN in LISTEN state cannot be received.
-  if(_receiver.state() == TCPReceiver::State::LISTEN && _sender.state() == TCPSender::State::CLOSED && !seg.header().syn) {
+  if(_receiver.state() == RState::LISTEN && _sender.state() == SState::CLOSED && !seg.header().syn) {
     return;
   }
 
@@ -55,7 +57,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
   if(_sender.consecutive_retransmissions() > _cfg.MAX_RETX_ATTEMPTS) {
     send_reset();
     unclean_shutdown();
-  } else if (_receiver.state() == TCPReceiver::State::FIN_RECV && _sender.state() == TCPSender::State::FIN_ACKED && _time_since_last_receive >= 10 * _cfg.rt_timeout) {
+  } else if (_receiver.state() == RState::FIN_RECV && _sender.state() == SState::FIN_ACKED && _time_since_last_receive >= 10 * _cfg.rt_timeout) {
     _linger_after_streams_finish = _active = false;
   } else {
     send_segments();
@@ -123,7 +125,7 @@ void TCPConnection::recv_segments(const TCPSegment &seg) {
   const auto &sa = _sender.state();   // sender   state after receive
 
   // if receiving an ack for FIN, no reply
-  if(sb == TCPSender::State::FIN_SENT && sa == TCPSender::State::FIN_ACKED && rb == ra) {
+  if(sb == SState::FIN_SENT && sa == SState::FIN_ACKED && rb == ra) {
     _active = _linger_after_streams_finish;
     return;
   }
@@ -136,7 +138,7 @@ void TCPConnection::recv_segments(const TCPSegment &seg) {
   send_segments();
 
   // set _linger to false if necessary
-  if(ra == TCPReceiver::State::FIN_RECV && sa == TCPSender::State::SYN_ACKED) {
+  if(ra == RState::FIN_RECV && sa == SState::SYN_ACKED) {
     _linger_after_streams_finish = false;
   }
 }
