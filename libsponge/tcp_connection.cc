@@ -22,18 +22,33 @@ size_t TCPConnection::time_since_last_segment_received() const { return _time_si
 void TCPConnection::segment_received(const TCPSegment &seg) {
   if(!_active) return;
 
-  // receiving a RST segment, unclean_shutdown
-  if(seg.header().rst) {
-    unclean_shutdown();
-    return;
-  }
+  const State &state1 = make_pair(_receiver.state(), _sender.state());
+  if(!vaild_seg(state1, seg)) return;
 
-  // segment without SYN in LISTEN state cannot be received.
-  if(_receiver.state() == RState::LISTEN && _sender.state() == SState::CLOSED && !seg.header().syn) {
-    return;
-  }
+  _time_since_last_receive = 0;
 
-  recv_segments(seg);
+  // receiving
+  _receiver.segment_received(seg);
+  if(seg.header().ack) _sender.ack_received(seg.header().ackno, seg.header().win);
+
+  const State &state2 = make_pair(_receiver.state(), _sender.state());
+  if(state1 == make_pair(RState::FIN_RECV, SState::FIN_SENT) && state2 == make_pair(RState::FIN_RECV, SState::FIN_ACKED) && !_linger_after_streams_finish) {
+    // if transit from state `LAST_ACK` to `CLOSED`, set _active to false
+    _active = false;
+  }
+  if(!reply_seg(state1, state2, seg)) return;
+
+  // replying
+  _sender.fill_window();
+  if(seg.length_in_sequence_space() && _sender.segments_out().empty()) {
+    _sender.send_empty_segment();
+  }
+  send_segments();
+
+  // if connection transit into state `CLOSE_WAIT`, which means passive close
+  if(state2 == make_pair(RState::FIN_RECV, SState::SYN_ACKED)) {
+    _linger_after_streams_finish = false;
+  }
 }
 
 bool TCPConnection::active() const { return _active; }
@@ -52,12 +67,13 @@ size_t TCPConnection::write(const string &data) {
 void TCPConnection::tick(const size_t ms_since_last_tick) {
   if(!_active) return;
 
+  const State &state = make_pair(_receiver.state(), _sender.state());
   _time_since_last_receive += ms_since_last_tick;
   _sender.tick(ms_since_last_tick);
   if(_sender.consecutive_retransmissions() > _cfg.MAX_RETX_ATTEMPTS) {
     send_reset();
     unclean_shutdown();
-  } else if (_receiver.state() == RState::FIN_RECV && _sender.state() == SState::FIN_ACKED && _time_since_last_receive >= 10 * _cfg.rt_timeout) {
+  } else if (state == make_pair(RState::FIN_RECV, SState::FIN_ACKED) && _time_since_last_receive >= 10 * _cfg.rt_timeout) {
     _linger_after_streams_finish = _active = false;
   } else {
     send_segments();
@@ -110,39 +126,6 @@ void TCPConnection::send_segments() {
   }
 }
 
-//! \brief this method does the real work of receiving segment and send back
-void TCPConnection::recv_segments(const TCPSegment &seg) {
-  _time_since_last_receive = 0;
-  const auto &hdr = seg.header();
-  const auto &rb = _receiver.state(); // receiver state before receive
-  const auto &sb = _sender.state();   // sender   state before receive
-
-  //receiving
-  _receiver.segment_received(seg);
-  if(hdr.ack) _sender.ack_received(hdr.ackno, hdr.win);
-
-  const auto &ra = _receiver.state(); // receiver state after receive
-  const auto &sa = _sender.state();   // sender   state after receive
-
-  // if receiving an ack for FIN, no reply
-  if(sb == SState::FIN_SENT && sa == SState::FIN_ACKED && rb == ra) {
-    _active = _linger_after_streams_finish;
-    return;
-  }
-
-  // sending
-  _sender.fill_window();
-  if(seg.length_in_sequence_space() && _sender.segments_out().empty()) {
-    _sender.send_empty_segment();
-  }
-  send_segments();
-
-  // set _linger to false if necessary
-  if(ra == RState::FIN_RECV && sa == SState::SYN_ACKED) {
-    _linger_after_streams_finish = false;
-  }
-}
-
 //! This method gets called when:
 //! 1. RST received
 //! 2. Retxcounts outnumbered _cfg.MAX_RETX_ATTEMPTS
@@ -151,4 +134,25 @@ void TCPConnection::unclean_shutdown() {
   _receiver.stream_out().set_error();
   _sender.stream_in().set_error();
   _active = _linger_after_streams_finish = false;
+}
+
+
+bool TCPConnection::vaild_seg(const State &state, const TCPSegment &seg) {
+  if(seg.header().rst) {
+    // receiving a RST segment, unclean_shutdown
+    unclean_shutdown();
+    return false;
+  } else if (state == make_pair(RState::LISTEN, SState::CLOSED) && !seg.header().syn) {
+    // segment without SYN in LISTEN state cannot be received.
+    return false;
+  }
+  return true;
+}
+
+bool TCPConnection::reply_seg(const State &state1, const State &state2, const TCPSegment &seg) {
+  // receiving an empty seg with ack for FIN, no reply
+  if(state1.second == SState::FIN_SENT && state2.second == SState::FIN_ACKED && !seg.length_in_sequence_space()) {
+    return false;
+  }
+  return true;
 }

@@ -23,10 +23,12 @@ class TCPConnection {
     bool _active{true};
     size_t _time_since_last_receive{0}; // time since last segment received
 
+    typedef std::pair<TCPReceiver::State, TCPSender::State> State;
     void send_reset();
     void send_segments();
-    void recv_segments(const TCPSegment &seg);
     void unclean_shutdown();
+    bool vaild_seg(const State &, const TCPSegment &);
+    bool reply_seg(const State &, const State &, const TCPSegment &);
 
   public:
     //! \name "Input" interface for the writer
