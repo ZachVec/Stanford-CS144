@@ -76,7 +76,6 @@ std::optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame
 
 /**
  * @brief This is called as time passes.
- * \todo 
  * 1. increase timer
  * 2. Expire(erase) any IP-to-Ethernet mappings that have expired.
  * 3. Expire(erase) any outstanding arp that have expired
@@ -105,7 +104,6 @@ bool NetworkInterface::broadcast_arp(uint32_t next_hop) {
     // if already exists, do not broadcast and return false
     if(_outstanding_arp.find(next_hop) != _outstanding_arp.end()) return false;
 
-    //! \todo send an arp message
     ARPMessage msg;
     msg.opcode = ARPMessage::OPCODE_REQUEST;
     msg.sender_ip_address = _ip_address.ipv4_numeric();
