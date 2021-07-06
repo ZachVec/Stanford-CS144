@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <queue>
+#include <unordered_map>
 
 //! \brief A "network interface" that connects IP (the internet layer, or network layer)
 //! with Ethernet (the network access layer, or link layer).
@@ -39,6 +40,27 @@ class NetworkInterface {
 
     //! outbound queue of Ethernet frames that the NetworkInterface wants sent
     std::queue<EthernetFrame> _frames_out{};
+
+    struct MappedAddr {
+      EthernetAddress addr;
+      size_t timeout; // valid until this time
+    };
+
+    //! mapping cache of ip-eth pairs
+    std::unordered_map<uint32_t, MappedAddr> _mappings{};
+
+    //! outstanding ARP request
+    std::unordered_map<uint32_t, size_t> _outstanding_arp{}; // ip-time(broadcast time + 5000)
+
+    //! outstanding EthernetFrames
+    std::unordered_map<uint32_t, std::queue<EthernetFrame>> _outstanding_frm{};
+
+    size_t _time{0};
+
+    bool broadcast_arp(uint32_t next_hop);
+    void send_outstanding(uint32_t next_hop);
+    void recv_arp(const EthernetFrame &);
+    std::optional<InternetDatagram> recv_ipv4(const EthernetFrame &);
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
