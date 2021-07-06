@@ -30,6 +30,16 @@
 
 实验结果可能会有随机几个 test case 跑不过（`FAILED`或是`TIMEOUT`），应该是GFW导致的。可以多试几次。
 
+> update：
+>
+> 只有两个测点需要联网，其它的都不需要。
+>
+> 另外感谢群友 [@wqql](https://gitee.com/wangqiim) 指出，由于CS144与 Linux 内核的TCP实现并不完全相同，导致课程实现的 TCP 与 Linux 内核 TCP 实现之间的通信在某种特定情况下会出问题，具体表象就是测点超时。在`build`目录下跑如下测试应该是百分百超时（就是卡在最后一步，没有提示结束）
+>
+> ```shell
+> $ ../txrx.sh -isDnd 10 -w 4 -l 0.1 -L 0.1
+> ```
+
 ```shell
 $ make check_lab4
 [100%] Testing the TCP connection...
