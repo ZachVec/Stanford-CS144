@@ -5,6 +5,7 @@
 
 #include <optional>
 #include <queue>
+#include <set>
 
 //! \brief A wrapper for NetworkInterface that makes the host-side
 //! interface asynchronous: instead of returning received datagrams
@@ -44,10 +45,20 @@ class Router {
     //! The router's collection of network interfaces
     std::vector<AsyncNetworkInterface> _interfaces{};
 
+    struct Route{
+        std::optional<Address> next_hop;
+        size_t interface_num;
+        uint32_t route_prefix;
+        uint8_t prefix_length;
+        bool operator<(const Route &other) const{ return prefix_length < other.prefix_length; }
+    };
+
+    std::set<Route> _routes{};
     //! Send a single datagram from the appropriate outbound interface to the next hop,
     //! as specified by the route with the longest prefix_length that matches the
     //! datagram's destination address.
     void route_one_datagram(InternetDatagram &dgram);
+    bool match(const Route &, const uint32_t &);
 
   public:
     //! Add an interface to the router
