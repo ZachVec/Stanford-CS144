@@ -1,24 +1,22 @@
 #include "byte_stream.hh"
-
-// Dummy implementation of a flow-controlled in-memory byte stream.
-
-// For Lab 0, please replace with a real implementation that passes the
-// automated checks run by `make check_lab0`.
-
-// You will need to add private members to the class declaration in `byte_stream.hh`
-
+#include <cstring>
 using namespace std;
 
 ByteStream::ByteStream(const size_t capacity):
 buf(capacity, '\0'), _cap(capacity), reader(0), writer(0), _eof(false), _error(false) {}
 
 size_t ByteStream::write(const string &data) {
-    size_t i;
-    for(i = 0; i < data.size() && buffer_size() < this->_cap; i++){
-        this->buf[this->writer%this->_cap] = data[i];
-        this->writer += 1;
+    size_t len   = min(remaining_capacity(), data.size());
+    size_t start = writer % _cap;
+    size_t avail = _cap - start;
+    if(len <= avail) {
+        memmove(buf.data() + start, data.data(), len);
+    } else {
+        memmove(buf.data() + start, data.data(), avail);
+        memmove(buf.data(), data.data()+avail, len - avail);
     }
-    return i;
+    writer += len;
+    return len;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
