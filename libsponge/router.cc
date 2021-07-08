@@ -17,7 +17,7 @@ void Router::add_route(const uint32_t route_prefix,
                        const size_t interface_num) {
     cerr << "DEBUG: adding route " << Address::from_ipv4_numeric(route_prefix).ip() << "/" << int(prefix_length)
          << " => " << (next_hop.has_value() ? next_hop->ip() : "(direct)") << " on interface " << interface_num << "\n";
-
+    _routes.insert({route_prefix, prefix_length, next_hop, interface_num});
 }
 
 /**
@@ -28,7 +28,9 @@ void Router::add_route(const uint32_t route_prefix,
  * @return true if match
  * @return false otherwise
  */
-bool Router::match(const Route &route, const uint32_t &dst) {
+bool Router::match(const uint32_t &route, const uint32_t &dst, const uint8_t &prefix_len) {
+    uint32_t mask = prefix_len == 32 ? 0 : ~(UINT32_MAX >> prefix_len);
+    return (route & mask) == (dst & mask);
 }
 
 /**
@@ -42,6 +44,15 @@ bool Router::match(const Route &route, const uint32_t &dst) {
  * @param[in] dgram The datagram to be routed.
  */
 void Router::route_one_datagram(InternetDatagram &dgram) {
+    const IPv4Header &hdr = dgram.header();
+    if(hdr.ttl <= 1) return;
+    for(const Route& route : _routes) {
+        if(!match(route.route_prefix, hdr.dst, route.prefix_length)) continue;
+        dgram.header().ttl--;
+        const Address &next_hop = route.next_hop.value_or(Address::from_ipv4_numeric(hdr.dst));
+        interface(route.interface_num).send_datagram(dgram, next_hop);
+        break;
+    }
 }
 
 void Router::route() {

@@ -46,19 +46,19 @@ class Router {
     std::vector<AsyncNetworkInterface> _interfaces{};
 
     struct Route{
-        std::optional<Address> next_hop;
-        size_t interface_num;
         uint32_t route_prefix;
         uint8_t prefix_length;
-        bool operator<(const Route &other) const{ return prefix_length < other.prefix_length; }
+        std::optional<Address> next_hop;
+        size_t interface_num;
+        bool operator>(const Route &other) const{ return prefix_length > other.prefix_length; }
     };
 
-    std::set<Route> _routes{};
+    std::multiset<Route, std::greater<Route>> _routes{};
     //! Send a single datagram from the appropriate outbound interface to the next hop,
     //! as specified by the route with the longest prefix_length that matches the
     //! datagram's destination address.
     void route_one_datagram(InternetDatagram &dgram);
-    bool match(const Route &, const uint32_t &);
+    bool match(const uint32_t &, const uint32_t &, const uint8_t &);
 
   public:
     //! Add an interface to the router
